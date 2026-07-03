@@ -21,6 +21,7 @@ import {
   toDatetimeLocalValue,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
+import { formatAppError } from "@/lib/errors";
 import type { Item, Vendor } from "@/types/database";
 
 type PurchaseFormProps = {
@@ -121,8 +122,8 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       .single();
 
     if (insertError || !data) {
-      setError(insertError?.message ?? "Could not add vendor.");
-      throw new Error(insertError?.message ?? "Could not add vendor.");
+      setError(formatAppError(insertError?.message ?? insertError, "Could not add vendor."));
+      throw new Error(formatAppError(insertError, "Could not add vendor."));
     }
 
     setVendorList((current) =>
@@ -202,7 +203,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       .insert(insertData);
 
     if (insertError) {
-      setError(insertError.message);
+      setError(formatAppError(insertError, "Could not save purchase. Please try again."));
       setLoading(false);
       return;
     }

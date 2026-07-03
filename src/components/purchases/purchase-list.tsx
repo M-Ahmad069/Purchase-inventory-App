@@ -9,13 +9,15 @@ import {
   createDefaultPurchaseFilters,
   type PurchaseFilterState,
 } from "@/components/purchases/purchase-filters";
-import { cardClassName } from "@/components/ui/form";
+import { ConfirmModal } from "@/components/ui/confirm-modal";
+import { cardClassName, FormMessage } from "@/components/ui/form";
 import {
   formatDateTime,
   formatPrice,
   formatQuantity,
   formatTotalAmount,
 } from "@/lib/format";
+import { formatAppError } from "@/lib/errors";
 import { getDateRange, isDateInRange } from "@/lib/date-filters";
 import { getPurchaseTotal, sumPurchaseQuantities } from "@/lib/purchases";
 import { createClient } from "@/lib/supabase/client";
@@ -34,6 +36,7 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   const filteredPurchases = useMemo(() => {
     const range = getDateRange(
@@ -89,9 +92,10 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
   const hasActiveFilters =
     filters.itemId !== "" || filters.datePreset !== "all";
 
-  async function handleDelete(id: string) {
-    if (!confirm("Delete this purchase?")) return;
+  async function confirmDelete() {
+    if (!pendingDeleteId || deletingId) return;
 
+    const id = pendingDeleteId;
     setDeletingId(id);
     setError(null);
 
@@ -102,12 +106,19 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
       .eq("id", id);
 
     if (deleteError) {
-      setError(deleteError.message);
+      setError(
+        formatAppError(
+          deleteError,
+          "Could not delete this purchase. Please try again."
+        )
+      );
       setDeletingId(null);
+      setPendingDeleteId(null);
       return;
     }
 
     setDeletingId(null);
+    setPendingDeleteId(null);
     router.refresh();
   }
 
@@ -131,6 +142,21 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
   }
 
   return (
+    <>
+      <ConfirmModal
+        open={pendingDeleteId !== null}
+        title="Delete purchase?"
+        message="Remove this purchase from your history? This cannot be undone."
+        confirmLabel="Delete purchase"
+        cancelLabel="Keep it"
+        loading={deletingId !== null}
+        variant="danger"
+        onConfirm={confirmDelete}
+        onCancel={() => {
+          if (!deletingId) setPendingDeleteId(null);
+        }}
+      />
+
     <div className="space-y-4">
       <section className={cardClassName}>
         <button
@@ -225,11 +251,7 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
         <p className="mt-1 text-sm text-[var(--muted)]">
           Newest first — tap a row on mobile to review details
         </p>
-        {error && (
-          <p className="mt-2 text-sm text-red-600 dark:text-red-400" role="alert">
-            {error}
-          </p>
-        )}
+        <FormMessage error={error} />
 
         {filteredPurchases.length === 0 ? (
           <p className="mt-4 text-sm text-[var(--muted)]">
@@ -291,7 +313,7 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                       <td className="py-3 text-right">
                         <button
                           type="button"
-                          onClick={() => handleDelete(purchase.id)}
+                          onClick={() => setPendingDeleteId(purchase.id)}
                           disabled={deletingId === purchase.id}
                           className="rounded-lg border border-red-200 px-2.5 py-1.5 text-xs text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
                         >
@@ -361,7 +383,7 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                   )}
                   <button
                     type="button"
-                    onClick={() => handleDelete(purchase.id)}
+                    onClick={() => setPendingDeleteId(purchase.id)}
                     disabled={deletingId === purchase.id}
                     className="mt-3 min-h-11 w-full rounded-xl border border-red-200 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:border-red-900/50 dark:text-red-400 dark:hover:bg-red-950/40"
                   >
@@ -374,5 +396,6 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
         )}
       </section>
     </div>
+    </>
   );
 }

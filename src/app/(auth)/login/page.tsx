@@ -11,6 +11,7 @@ import {
   labelClassName,
 } from "@/components/ui/form";
 import { createClient } from "@/lib/supabase/client";
+import { formatAppError } from "@/lib/errors";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -39,7 +40,7 @@ export default function LoginPage() {
     });
 
     if (signInError) {
-      setError(signInError.message);
+      setError(formatAppError(signInError, "Could not sign in. Please try again."));
       setLoading(false);
       return;
     }

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/form";
 import { SuccessBanner } from "@/components/ui/success-banner";
 import { createClient } from "@/lib/supabase/client";
+import { formatAppError } from "@/lib/errors";
 import type { MeasurementType } from "@/types/database";
 
 export function ItemForm() {
@@ -46,7 +47,7 @@ export function ItemForm() {
     });
 
     if (insertError) {
-      setError(insertError.message);
+      setError(formatAppError(insertError, "Could not add item. Please try again."));
       setLoading(false);
       return;
     }
