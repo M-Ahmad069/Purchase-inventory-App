@@ -3,25 +3,114 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f4f6f8;
+  --foreground: #111827;
+  --card: #ffffff;
+  --card-border: rgba(229, 231, 235, 0.9);
+  --muted: #6b7280;
+  --input-bg: #ffffff;
+  --input-border: #e5e7eb;
+  --hbs-primary: #059669;
+  --hbs-primary-dark: #047857;
+  --hbs-accent: #0d9488;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.dark {
+  --background: #0f1419;
+  --foreground: #f3f4f6;
+  --card: #1a2332;
+  --card-border: rgba(55, 65, 81, 0.8);
+  --muted: #9ca3af;
+  --input-bg: #111827;
+  --input-border: #374151;
+  --hbs-primary: #10b981;
+  --hbs-primary-dark: #059669;
+  --hbs-accent: #14b8a6;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 @layer utilities {
-  .text-balance {
-    text-wrap: balance;
+  .animate-fade-in {
+    animation: fadeIn 0.35s ease-out both;
   }
+
+  .animate-slide-up {
+    animation: slideUp 0.4s ease-out both;
+  }
+
+  .animate-success-in {
+    animation: successIn 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .animate-check-pop {
+    animation: checkPop 0.5s cubic-bezier(0.22, 1, 0.36, 1) 0.15s both;
+  }
+
+  .animate-field-in {
+    animation: fieldIn 0.3s ease-out both;
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(16 185 129 / 0.5) transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(16 185 129 / 0.45);
+    border-radius: 9999px;
+  }
+
+  .dark .scrollbar-thin {
+    scrollbar-color: rgb(52 211 153 / 0.5) transparent;
+  }
+
+  .dark .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: rgb(52 211 153 / 0.45);
+  }
+
+  .safe-bottom {
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0.5rem);
+  }
+
+  .touch-manipulation {
+    touch-action: manipulation;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes successIn {
+  from { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes checkPop {
+  from { transform: scale(0.5); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+@keyframes fieldIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
 }
