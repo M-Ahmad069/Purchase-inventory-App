@@ -39,7 +39,7 @@ export default async function PurchasesPage() {
           href="/purchases/new"
           className={`${buttonClassName} hidden items-center justify-center sm:inline-flex sm:shrink-0`}
         >
-          Log Purchase
+          Buying
         </Link>
       </div>
       <PurchaseList

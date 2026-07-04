@@ -29,6 +29,13 @@ type PurchaseFormProps = {
   items: Item[];
 };
 
+function parseOptionalPrice(value: string): number {
+  const trimmed = value.trim();
+  if (!trimmed) return 0;
+  const parsed = Number(trimmed);
+  return parsed;
+}
+
 function resetFormState() {
   return {
     itemId: "",
@@ -133,6 +140,30 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
     router.refresh();
   }
 
+  async function handleDeleteVendor(vendorId: string) {
+    setError(null);
+    const supabase = createClient();
+    const { error: deleteError } = await supabase
+      .from("vendors")
+      .delete()
+      .eq("id", vendorId);
+
+    if (deleteError) {
+      const message = formatAppError(
+        deleteError,
+        "Could not delete vendor. Please try again."
+      );
+      setError(message);
+      throw new Error(message);
+    }
+
+    setVendorList((current) => current.filter((vendor) => vendor.id !== vendorId));
+    if (vendorId === formState.vendorId) {
+      setFormState((current) => ({ ...current, vendorId: "" }));
+    }
+    router.refresh();
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (loading) return;
@@ -144,11 +175,11 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       return;
     }
 
-    const cost = Number(costPrice);
-    const retail = Number(retailPrice);
+    const cost = parseOptionalPrice(costPrice);
+    const retail = parseOptionalPrice(retailPrice);
 
     if (Number.isNaN(cost) || cost < 0 || Number.isNaN(retail) || retail < 0) {
-      setError("Enter valid prices.");
+      setError("Enter valid prices or leave them blank.");
       return;
     }
 
@@ -214,6 +245,12 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
     router.refresh();
   }
 
+  const saveButtonClassName =
+    "w-full min-h-14 rounded-xl bg-emerald-600 px-4 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[var(--background)] active:scale-[0.98] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:bg-emerald-500 dark:hover:bg-emerald-400";
+
+  const mobileStickySaveClassName =
+    "w-full min-h-10 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[var(--background)] active:scale-[0.98] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:bg-emerald-500 dark:hover:bg-emerald-400";
+
   if (items.length === 0) {
     return (
       <section className={cardClassName}>
@@ -234,7 +271,20 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       <SuccessBanner message="Purchase saved successfully" visible={showSuccess} />
 
       <section className={`${cardClassName} animate-slide-up`}>
-        <form onSubmit={handleSubmit}>
+        <form id="purchase-form" onSubmit={handleSubmit}>
+          <div className="sticky top-14 z-20 -mx-1 mb-3 border-b border-[var(--card-border)] bg-[var(--card)]/95 py-2 backdrop-blur-sm md:hidden">
+            <button type="submit" disabled={loading} className={mobileStickySaveClassName}>
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                  Saving…
+                </span>
+              ) : (
+                "Save Purchase"
+              )}
+            </button>
+          </div>
+
           <fieldset disabled={loading} className={`${fieldsetClassName} space-y-5`}>
           <SearchableSelect
             label="Item"
@@ -292,6 +342,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
               setFormState((current) => ({ ...current, vendorId: nextVendorId }))
             }
             onCreate={handleCreateVendor}
+            onDelete={handleDeleteVendor}
             required
             disabled={loading}
           />
@@ -300,9 +351,13 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
             <div className="animate-field-in grid gap-4 md:grid-cols-2">
               <NumberInput
                 id="purchase-cost"
-                label={`Cost Price (${unitLabel})`}
+                label={
+                  <>
+                    Cost Price ({unitLabel}){" "}
+                    <span className="font-normal text-[var(--muted)]">(optional)</span>
+                  </>
+                }
                 mode="decimal"
-                required
                 value={costPrice}
                 onChange={(value) =>
                   setFormState((current) => ({ ...current, costPrice: value }))
@@ -312,9 +367,13 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
               />
               <NumberInput
                 id="purchase-retail"
-                label={`Retail Price (${unitLabel})`}
+                label={
+                  <>
+                    Retail Price ({unitLabel}){" "}
+                    <span className="font-normal text-[var(--muted)]">(optional)</span>
+                  </>
+                }
                 mode="decimal"
-                required
                 value={retailPrice}
                 onChange={(value) =>
                   setFormState((current) => ({ ...current, retailPrice: value }))
@@ -331,7 +390,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
               {liveTotal != null ? formatTotalAmount(liveTotal) : "—"}
             </p>
             <p className="mt-1 text-xs text-emerald-700 dark:text-emerald-400">
-              Quantity × cost price
+              {costPrice.trim() ? "Quantity × cost price" : "Add cost price to see total"}
             </p>
           </div>
 
@@ -375,7 +434,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full min-h-14 rounded-xl bg-emerald-600 px-4 py-3.5 text-base font-bold text-white shadow-md transition-all hover:bg-emerald-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[var(--background)] active:scale-[0.98] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 dark:bg-emerald-500 dark:hover:bg-emerald-400"
+            className={saveButtonClassName}
           >
             {loading ? (
               <span className="flex items-center justify-center gap-2">

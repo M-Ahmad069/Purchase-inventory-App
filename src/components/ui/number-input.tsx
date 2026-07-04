@@ -1,10 +1,12 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { inputClassName, labelClassName } from "@/components/ui/form";
 
 type NumberInputProps = {
   id: string;
-  label: string;
+  label: ReactNode;
   value: string;
   onChange: (value: string) => void;
   mode: "integer" | "decimal";

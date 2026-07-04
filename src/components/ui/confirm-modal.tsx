@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { createPortal } from "react-dom";
 
 import {
   buttonClassName,
@@ -47,16 +48,16 @@ export function ConfirmModal({
     };
   }, [open, loading, onCancel]);
 
-  if (!open) return null;
-
   const confirmClasses =
     variant === "danger"
       ? "min-h-12 flex-1 rounded-xl border border-red-200 bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition-all hover:bg-red-700 disabled:opacity-50 dark:border-red-900/50 dark:bg-red-600 dark:hover:bg-red-500"
       : `${buttonClassName} flex-1 !min-h-12`;
 
-  return (
+  if (!open || typeof document === "undefined") return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center"
+      className="fixed inset-0 z-[100] flex items-end justify-center p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:items-center sm:pb-4"
       role="presentation"
     >
       <button
@@ -113,6 +114,7 @@ export function ConfirmModal({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
