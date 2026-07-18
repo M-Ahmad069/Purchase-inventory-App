@@ -6,7 +6,14 @@ type PurchaseLike = Pick<
 >;
 
 export function getUnitLabel(measurementType: MeasurementType) {
-  return measurementType === "weight" ? "kg" : "piece";
+  switch (measurementType) {
+    case "weight":
+      return "kg";
+    case "piece":
+      return "piece";
+    case "carton":
+      return "carton";
+  }
 }
 
 export function getPurchaseQuantity(

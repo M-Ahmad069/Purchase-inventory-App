@@ -70,19 +70,23 @@ export function ItemPurchaseHistory({
                   {formatQuantity(
                     item.measurement_type,
                     purchase.quantity_kg,
-                    purchase.quantity_pieces
+                    purchase.quantity_pieces,
+                    item.pieces_per_carton,
+                    item.kg_per_unit
                   )}
                 </td>
                 <td className="py-3 pr-4">
                   {formatPriceWithUnit(
                     purchase.cost_price,
-                    item.measurement_type
+                    item.measurement_type,
+                    item.kg_per_unit
                   )}
                 </td>
                 <td className="py-3 pr-4">
                   {formatPriceWithUnit(
                     purchase.retail_price,
-                    item.measurement_type
+                    item.measurement_type,
+                    item.kg_per_unit
                   )}
                 </td>
                 <td className="py-3 font-medium text-[var(--foreground)]">
@@ -120,7 +124,9 @@ export function ItemPurchaseHistory({
                   {formatQuantity(
                     item.measurement_type,
                     purchase.quantity_kg,
-                    purchase.quantity_pieces
+                    purchase.quantity_pieces,
+                    item.pieces_per_carton,
+                    item.kg_per_unit
                   )}
                 </dd>
               </div>
@@ -129,7 +135,8 @@ export function ItemPurchaseHistory({
                 <dd className="font-medium text-[var(--foreground)]">
                   {formatPriceWithUnit(
                     purchase.cost_price,
-                    item.measurement_type
+                    item.measurement_type,
+                    item.kg_per_unit
                   )}
                 </dd>
               </div>
@@ -138,7 +145,8 @@ export function ItemPurchaseHistory({
                 <dd className="font-medium text-[var(--foreground)]">
                   {formatPriceWithUnit(
                     purchase.retail_price,
-                    item.measurement_type
+                    item.measurement_type,
+                    item.kg_per_unit
                   )}
                 </dd>
               </div>

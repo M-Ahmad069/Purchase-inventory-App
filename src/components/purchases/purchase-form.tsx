@@ -18,11 +18,13 @@ import { VendorField } from "@/components/purchases/vendor-field";
 import {
   formatTotalAmount,
   getPriceUnitLabel,
+  isMaanWeight,
   toDatetimeLocalValue,
 } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import { formatAppError } from "@/lib/errors";
 import type { Item, Vendor } from "@/types/database";
+import { MAAN_KG } from "@/types/database";
 
 type PurchaseFormProps = {
   vendors: Vendor[];
@@ -56,6 +58,8 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** For maan items: enter quantity as maans or as kg. */
+  const [weightInputMode, setWeightInputMode] = useState<"maan" | "kg">("maan");
 
   const {
     itemId,
@@ -74,7 +78,11 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
   );
 
   const measurementType = selectedItem?.measurement_type ?? null;
-  const unitLabel = measurementType ? getPriceUnitLabel(measurementType) : "";
+  const maanItem = measurementType === "weight" && isMaanWeight(selectedItem?.kg_per_unit);
+  const kgPerUnit = selectedItem?.kg_per_unit ?? MAAN_KG;
+  const unitLabel = measurementType
+    ? getPriceUnitLabel(measurementType, selectedItem?.kg_per_unit)
+    : "";
 
   useEffect(() => {
     if (!showSuccess) return;
@@ -82,31 +90,72 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
     return () => window.clearTimeout(timer);
   }, [showSuccess]);
 
+  useEffect(() => {
+    setWeightInputMode(maanItem ? "maan" : "kg");
+  }, [itemId, maanItem]);
+
+  const resolvedWeightKg = useMemo(() => {
+    const amount = Number(quantityKg);
+    if (Number.isNaN(amount) || amount <= 0) return null;
+    if (maanItem && weightInputMode === "maan") {
+      return amount * kgPerUnit;
+    }
+    return amount;
+  }, [quantityKg, maanItem, weightInputMode, kgPerUnit]);
+
   const liveTotal = useMemo(() => {
     const cost = Number(costPrice);
     if (Number.isNaN(cost) || cost < 0) return null;
 
     if (measurementType === "weight") {
-      const kg = Number(quantityKg);
-      if (Number.isNaN(kg) || kg <= 0) return null;
-      return kg * cost;
+      if (resolvedWeightKg == null) return null;
+      // Maan items: cost is entered per maan → convert to per-kg for total
+      const costPerKg = maanItem ? cost / kgPerUnit : cost;
+      return resolvedWeightKg * costPerKg;
     }
 
-    if (measurementType === "piece") {
+    if (measurementType === "piece" || measurementType === "carton") {
       const pieces = Number(quantityPieces);
       if (Number.isNaN(pieces) || pieces <= 0) return null;
       return pieces * cost;
     }
 
     return null;
-  }, [costPrice, measurementType, quantityKg, quantityPieces]);
+  }, [
+    costPrice,
+    measurementType,
+    quantityPieces,
+    resolvedWeightKg,
+    maanItem,
+    kgPerUnit,
+  ]);
+
+  const cartonPreview = useMemo(() => {
+    if (measurementType !== "carton" || !selectedItem?.pieces_per_carton) {
+      return null;
+    }
+    const cartons = Number(quantityPieces);
+    if (!Number.isInteger(cartons) || cartons <= 0) return null;
+    return cartons * selectedItem.pieces_per_carton;
+  }, [measurementType, quantityPieces, selectedItem]);
 
   const itemOptions = useMemo(
     () =>
-      items.map((item) => ({
-        id: item.id,
-        label: `${item.name} (${item.measurement_type === "weight" ? "kg" : "pcs"})`,
-      })),
+      items.map((item) => {
+        let unit = "pcs";
+        if (item.measurement_type === "weight") {
+          unit = isMaanWeight(item.kg_per_unit) ? "maan" : "kg";
+        }
+        if (item.measurement_type === "carton") {
+          unit = item.pieces_per_carton
+            ? `${item.pieces_per_carton}/ctn`
+            : "carton";
+        }
+        return {
+          id: item.id,
+          label: `${item.name} (${unit})`,
+        };
+      }),
     [items]
   );
 
@@ -195,35 +244,50 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
     };
 
     if (measurementType === "weight") {
-      const kg = Number(quantityKg);
-      if (Number.isNaN(kg) || kg <= 0) {
-        setError("Enter a valid total weight in kg.");
+      if (resolvedWeightKg == null || resolvedWeightKg <= 0) {
+        setError(
+          maanItem && weightInputMode === "maan"
+            ? "Enter a valid maan count."
+            : "Enter a valid total weight in kg."
+        );
+        return;
+      }
+
+      // Always store kg + per-kg prices so history totals stay correct
+      const costPerKg = maanItem ? cost / kgPerUnit : cost;
+      const retailPerKg = maanItem ? retail / kgPerUnit : retail;
+
+      insertData = {
+        vendor_id: vendorId,
+        item_id: itemId,
+        purchased_at: new Date(purchasedAt).toISOString(),
+        quantity_kg: resolvedWeightKg,
+        cost_price: costPerKg,
+        retail_price: retailPerKg,
+        notes: notes.trim() || null,
+      };
+    } else if (measurementType === "piece" || measurementType === "carton") {
+      const count = Number(quantityPieces);
+      if (!Number.isInteger(count) || count <= 0) {
+        setError(
+          measurementType === "carton"
+            ? "Enter a valid carton count."
+            : "Enter a valid total piece count."
+        );
         return;
       }
       insertData = {
         vendor_id: vendorId,
         item_id: itemId,
         purchased_at: new Date(purchasedAt).toISOString(),
-        quantity_kg: kg,
+        quantity_pieces: count,
         cost_price: cost,
         retail_price: retail,
         notes: notes.trim() || null,
       };
     } else {
-      const pieces = Number(quantityPieces);
-      if (!Number.isInteger(pieces) || pieces <= 0) {
-        setError("Enter a valid total piece count.");
-        return;
-      }
-      insertData = {
-        vendor_id: vendorId,
-        item_id: itemId,
-        purchased_at: new Date(purchasedAt).toISOString(),
-        quantity_pieces: pieces,
-        cost_price: cost,
-        retail_price: retail,
-        notes: notes.trim() || null,
-      };
+      setError("Select a valid item.");
+      return;
     }
 
     setLoading(true);
@@ -297,20 +361,78 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
           />
 
           {measurementType === "weight" && (
-            <div key="weight-qty" className="animate-field-in">
-              <NumberInput
-                id="purchase-kg"
-                label="Total Weight"
-                mode="decimal"
-                suffix="kg"
-                required
-                value={quantityKg}
-                onChange={(value) =>
-                  setFormState((current) => ({ ...current, quantityKg: value }))
-                }
-                placeholder="e.g. 25"
-                disabled={loading}
-              />
+            <div key="weight-qty" className="animate-field-in space-y-2">
+              {maanItem && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWeightInputMode("maan");
+                      setFormState((current) => ({ ...current, quantityKg: "" }));
+                    }}
+                    className={`min-h-9 flex-1 rounded-lg border px-3 text-xs font-semibold ${
+                      weightInputMode === "maan"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                        : "border-[var(--input-border)] text-[var(--muted)]"
+                    }`}
+                  >
+                    Enter maans
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWeightInputMode("kg");
+                      setFormState((current) => ({ ...current, quantityKg: "" }));
+                    }}
+                    className={`min-h-9 flex-1 rounded-lg border px-3 text-xs font-semibold ${
+                      weightInputMode === "kg"
+                        ? "border-emerald-500 bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300"
+                        : "border-[var(--input-border)] text-[var(--muted)]"
+                    }`}
+                  >
+                    Enter kg
+                  </button>
+                </div>
+              )}
+
+              {maanItem && weightInputMode === "maan" ? (
+                <NumberInput
+                  id="purchase-maans"
+                  label="Total Maans"
+                  mode="decimal"
+                  suffix="maan"
+                  required
+                  value={quantityKg}
+                  onChange={(value) =>
+                    setFormState((current) => ({ ...current, quantityKg: value }))
+                  }
+                  placeholder="e.g. 2"
+                  disabled={loading}
+                />
+              ) : (
+                <NumberInput
+                  id="purchase-kg"
+                  label="Total Weight"
+                  mode="decimal"
+                  suffix="kg"
+                  required
+                  value={quantityKg}
+                  onChange={(value) =>
+                    setFormState((current) => ({ ...current, quantityKg: value }))
+                  }
+                  placeholder="e.g. 25"
+                  disabled={loading}
+                />
+              )}
+
+              {maanItem && resolvedWeightKg != null && (
+                <p className="text-xs text-[var(--muted)]">
+                  1 maan = {kgPerUnit} kg
+                  {weightInputMode === "maan"
+                    ? ` · = ${resolvedWeightKg} kg`
+                    : ` · = ${(resolvedWeightKg / kgPerUnit).toLocaleString(undefined, { maximumFractionDigits: 3 })} maan`}
+                </p>
+              )}
             </div>
           )}
 
@@ -332,6 +454,33 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
                 placeholder="e.g. 12"
                 disabled={loading}
               />
+            </div>
+          )}
+
+          {measurementType === "carton" && (
+            <div key="carton-qty" className="animate-field-in space-y-2">
+              <NumberInput
+                id="purchase-cartons"
+                label="Total Cartons"
+                mode="integer"
+                suffix="ctn"
+                required
+                value={quantityPieces}
+                onChange={(value) =>
+                  setFormState((current) => ({
+                    ...current,
+                    quantityPieces: value,
+                  }))
+                }
+                placeholder="e.g. 3"
+                disabled={loading}
+              />
+              {selectedItem?.pieces_per_carton && (
+                <p className="text-xs text-[var(--muted)]">
+                  {selectedItem.pieces_per_carton} pcs per carton
+                  {cartonPreview != null ? ` · = ${cartonPreview} pcs` : ""}
+                </p>
+              )}
             </div>
           )}
 

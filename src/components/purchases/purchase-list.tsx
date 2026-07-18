@@ -229,9 +229,11 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                 selectedItem.measurement_type === "weight"
                   ? summary.totalQuantity
                   : null,
-                selectedItem.measurement_type === "piece"
+                selectedItem.measurement_type !== "weight"
                   ? summary.totalQuantity
-                  : null
+                  : null,
+                selectedItem.pieces_per_carton,
+                selectedItem.kg_per_unit
               )}
             </p>
           </div>
@@ -297,7 +299,9 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                           ? formatQuantity(
                               purchase.items.measurement_type,
                               purchase.quantity_kg,
-                              purchase.quantity_pieces
+                              purchase.quantity_pieces,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
                             )
                           : "—"}
                       </td>
@@ -358,7 +362,9 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                           ? formatQuantity(
                               purchase.items.measurement_type,
                               purchase.quantity_kg,
-                              purchase.quantity_pieces
+                              purchase.quantity_pieces,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
                             )
                           : "—"}
                       </dd>

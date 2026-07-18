@@ -63,7 +63,9 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
   const quantityDisplay = formatQuantity(
     item.measurement_type,
     item.measurement_type === "weight" ? summary.totalQuantity : null,
-    item.measurement_type === "piece" ? summary.totalQuantity : null
+    item.measurement_type !== "weight" ? summary.totalQuantity : null,
+    item.pieces_per_carton,
+    item.kg_per_unit
   );
 
   const hasActiveFilters = filters.datePreset !== "all";
@@ -206,19 +208,23 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                         {formatQuantity(
                           item.measurement_type,
                           purchase.quantity_kg,
-                          purchase.quantity_pieces
+                          purchase.quantity_pieces,
+                          item.pieces_per_carton,
+                          item.kg_per_unit
                         )}
                       </td>
                       <td className="py-3 pr-4">
                         {formatPriceWithUnit(
                           purchase.cost_price,
-                          item.measurement_type
+                          item.measurement_type,
+                          item.kg_per_unit
                         )}
                       </td>
                       <td className="py-3 pr-4">
                         {formatPriceWithUnit(
                           purchase.retail_price,
-                          item.measurement_type
+                          item.measurement_type,
+                          item.kg_per_unit
                         )}
                       </td>
                       <td className="py-3 font-medium text-[var(--foreground)]">
@@ -256,7 +262,9 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                         {formatQuantity(
                           item.measurement_type,
                           purchase.quantity_kg,
-                          purchase.quantity_pieces
+                          purchase.quantity_pieces,
+                          item.pieces_per_carton,
+                          item.kg_per_unit
                         )}
                       </dd>
                     </div>
@@ -265,7 +273,8 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                       <dd className="font-medium text-[var(--foreground)]">
                         {formatPriceWithUnit(
                           purchase.cost_price,
-                          item.measurement_type
+                          item.measurement_type,
+                          item.kg_per_unit
                         )}
                       </dd>
                     </div>
@@ -274,7 +283,8 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                       <dd className="font-medium text-[var(--foreground)]">
                         {formatPriceWithUnit(
                           purchase.retail_price,
-                          item.measurement_type
+                          item.measurement_type,
+                          item.kg_per_unit
                         )}
                       </dd>
                     </div>

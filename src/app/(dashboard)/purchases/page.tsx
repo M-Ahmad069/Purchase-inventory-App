@@ -19,7 +19,7 @@ export default async function PurchasesPage() {
         `
         *,
         vendors (name),
-        items (name, measurement_type)
+        items (name, measurement_type, pieces_per_carton, kg_per_unit)
       `
       )
       .order("purchased_at", { ascending: false }),

@@ -6,7 +6,10 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type MeasurementType = "weight" | "piece";
+export type MeasurementType = "weight" | "piece" | "carton";
+
+/** Standard maan size used in this shop (40 kg). */
+export const MAAN_KG = 40;
 
 export interface Database {
   public: {
@@ -43,6 +46,8 @@ export interface Database {
           id: string;
           name: string;
           measurement_type: MeasurementType;
+          pieces_per_carton: number | null;
+          kg_per_unit: number | null;
           notes: string | null;
           created_at: string;
           updated_at: string;
@@ -51,6 +56,8 @@ export interface Database {
           id?: string;
           name: string;
           measurement_type: MeasurementType;
+          pieces_per_carton?: number | null;
+          kg_per_unit?: number | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -59,6 +66,8 @@ export interface Database {
           id?: string;
           name?: string;
           measurement_type?: MeasurementType;
+          pieces_per_carton?: number | null;
+          kg_per_unit?: number | null;
           notes?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -160,7 +169,10 @@ export type Purchase = Database["public"]["Tables"]["purchases"]["Row"];
 
 export type PurchaseWithRelations = Purchase & {
   vendors: Pick<Vendor, "name"> | null;
-  items: Pick<Item, "name" | "measurement_type"> | null;
+  items: Pick<
+    Item,
+    "name" | "measurement_type" | "pieces_per_carton" | "kg_per_unit"
+  > | null;
 };
 
 export type PurchaseWithVendor = Purchase & {

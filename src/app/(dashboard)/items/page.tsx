@@ -15,10 +15,10 @@ export default async function ItemsPage() {
       <div>
         <h1 className={pageTitleClassName}>Items</h1>
         <p className={pageSubtitleClassName}>
-          Add products — measured by kg or pieces
+          Add products — kg, pieces, or carton
         </p>
       </div>
-      <ItemForm />
+      <ItemForm items={items ?? []} />
       <ItemList items={items ?? []} />
     </div>
   );

@@ -28,7 +28,9 @@ export function ItemSummary({ item, purchases }: ItemSummaryProps) {
   const quantityDisplay = formatQuantity(
     item.measurement_type,
     item.measurement_type === "weight" ? totalQuantity : null,
-    item.measurement_type === "piece" ? totalQuantity : null
+    item.measurement_type !== "weight" ? totalQuantity : null,
+    item.pieces_per_carton,
+    item.kg_per_unit
   );
 
   return (

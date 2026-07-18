@@ -40,9 +40,9 @@ export function FilterSelect({
   const [open, setOpen] = useState(false);
 
   const selectedOption = useMemo(() => {
-    if (!value) return { id: "", label: allLabel };
+    if (!value) return null;
     return options.find((option) => option.id === value) ?? null;
-  }, [value, options, allLabel]);
+  }, [value, options]);
 
   const filteredOptions = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -58,9 +58,9 @@ export function FilterSelect({
   }, [options, query, allLabel]);
 
   useEffect(() => {
-    if (selectedOption && !open) {
-      setQuery(selectedOption.label);
-    }
+    if (open) return;
+    // When closed: show selected item name, or leave blank for "All items"
+    setQuery(selectedOption?.label ?? "");
   }, [selectedOption, open]);
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function FilterSelect({
         !containerRef.current.contains(event.target as Node)
       ) {
         setOpen(false);
-        if (selectedOption) setQuery(selectedOption.label);
+        setQuery(selectedOption?.label ?? "");
       }
     }
     document.addEventListener("mousedown", handleClickOutside);
@@ -79,8 +79,14 @@ export function FilterSelect({
 
   function handleSelect(option: FilterSelectOption) {
     onChange(option.id);
-    setQuery(option.label);
+    setQuery(option.id ? option.label : "");
     setOpen(false);
+  }
+
+  function handleFocus() {
+    setOpen(true);
+    // Clear so user can type immediately (don't keep "All items" or full name stuck)
+    setQuery("");
   }
 
   return (
@@ -97,21 +103,28 @@ export function FilterSelect({
           aria-controls={listboxId}
           autoComplete="off"
           value={query}
-          placeholder={placeholder}
+          placeholder={open ? placeholder : (selectedOption?.label ?? allLabel)}
           onChange={(e) => {
             setQuery(e.target.value);
             setOpen(true);
-            if (value && e.target.value !== selectedOption?.label) {
+            if (value) {
               onChange("");
             }
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={handleFocus}
           className={`${inputClassName} !mt-0 pr-10`}
         />
         <button
           type="button"
           tabIndex={-1}
-          onClick={() => setOpen((current) => !current)}
+          onClick={() => {
+            if (open) {
+              setOpen(false);
+              setQuery(selectedOption?.label ?? "");
+            } else {
+              handleFocus();
+            }
+          }}
           aria-label={open ? "Close list" : "Open list"}
           className={`absolute right-2 top-1/2 -translate-y-1/2 rounded-lg p-2 text-[var(--muted)] transition-transform hover:bg-gray-100 dark:hover:bg-gray-800 ${open ? "rotate-180" : ""}`}
         >
