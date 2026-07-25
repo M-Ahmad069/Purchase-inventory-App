@@ -83,6 +83,26 @@ export function formatPriceWithUnit(
   return `${formatPrice(displayValue)} ${getPriceUnitLabel(measurementType, kgPerUnit)}`;
 }
 
+/** Cost/retail as bought, plus piece/kg breakdown when useful. */
+export function formatBuyingPrice(
+  value: number,
+  measurementType: MeasurementType,
+  piecesPerCarton?: number | null,
+  kgPerUnit?: number | null
+) {
+  if (measurementType === "carton" && piecesPerCarton != null && piecesPerCarton > 0) {
+    const perPiece = value / piecesPerCarton;
+    return `${formatPrice(value)} /ctn · ${formatPrice(perPiece)} /pc`;
+  }
+
+  if (measurementType === "weight" && isMaanWeight(kgPerUnit)) {
+    const perMaan = value * (kgPerUnit as number);
+    return `${formatPrice(perMaan)} /maan · ${formatPrice(value)} /kg`;
+  }
+
+  return formatPriceWithUnit(value, measurementType, kgPerUnit);
+}
+
 export function formatQuantity(
   measurementType: MeasurementType,
   quantityKg: number | null,

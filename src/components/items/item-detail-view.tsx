@@ -11,7 +11,7 @@ import {
 import { buttonClassName, cardClassName, pageSubtitleClassName } from "@/components/ui/form";
 import {
   formatDateTime,
-  formatPriceWithUnit,
+  formatBuyingPrice,
   formatQuantity,
   formatTotalAmount,
 } from "@/lib/format";
@@ -214,16 +214,18 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                         )}
                       </td>
                       <td className="py-3 pr-4">
-                        {formatPriceWithUnit(
+                        {formatBuyingPrice(
                           purchase.cost_price,
                           item.measurement_type,
+                          item.pieces_per_carton,
                           item.kg_per_unit
                         )}
                       </td>
                       <td className="py-3 pr-4">
-                        {formatPriceWithUnit(
+                        {formatBuyingPrice(
                           purchase.retail_price,
                           item.measurement_type,
+                          item.pieces_per_carton,
                           item.kg_per_unit
                         )}
                       </td>
@@ -271,9 +273,10 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                     <div>
                       <dt className="text-[var(--muted)]">Cost</dt>
                       <dd className="font-medium text-[var(--foreground)]">
-                        {formatPriceWithUnit(
+                        {formatBuyingPrice(
                           purchase.cost_price,
                           item.measurement_type,
+                          item.pieces_per_carton,
                           item.kg_per_unit
                         )}
                       </dd>
@@ -281,9 +284,10 @@ export function ItemDetailView({ item, purchases }: ItemDetailViewProps) {
                     <div>
                       <dt className="text-[var(--muted)]">Retail</dt>
                       <dd className="font-medium text-[var(--foreground)]">
-                        {formatPriceWithUnit(
+                        {formatBuyingPrice(
                           purchase.retail_price,
                           item.measurement_type,
+                          item.pieces_per_carton,
                           item.kg_per_unit
                         )}
                       </dd>

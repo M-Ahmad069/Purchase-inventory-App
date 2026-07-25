@@ -13,6 +13,7 @@ import { ConfirmModal } from "@/components/ui/confirm-modal";
 import { cardClassName, FormMessage } from "@/components/ui/form";
 import {
   formatDateTime,
+  formatBuyingPrice,
   formatPrice,
   formatQuantity,
   formatTotalAmount,
@@ -236,6 +237,19 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                 selectedItem.kg_per_unit
               )}
             </p>
+            {selectedItem.measurement_type === "carton" &&
+              selectedItem.pieces_per_carton != null &&
+              selectedItem.pieces_per_carton > 0 &&
+              summary.totalQuantity > 0 && (
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Avg buy{" "}
+                  {formatBuyingPrice(
+                    summary.totalSpent / summary.totalQuantity,
+                    "carton",
+                    selectedItem.pieces_per_carton
+                  )}
+                </p>
+              )}
           </div>
         )}
       </div>
@@ -306,10 +320,24 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                           : "—"}
                       </td>
                       <td className="py-3 pr-4">
-                        {formatPrice(purchase.cost_price)}
+                        {purchase.items
+                          ? formatBuyingPrice(
+                              purchase.cost_price,
+                              purchase.items.measurement_type,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
+                            )
+                          : formatPrice(purchase.cost_price)}
                       </td>
                       <td className="py-3 pr-4">
-                        {formatPrice(purchase.retail_price)}
+                        {purchase.items
+                          ? formatBuyingPrice(
+                              purchase.retail_price,
+                              purchase.items.measurement_type,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
+                            )
+                          : formatPrice(purchase.retail_price)}
                       </td>
                       <td className="py-3 pr-4 font-medium text-[var(--foreground)]">
                         {formatTotalAmount(getPurchaseTotal(purchase))}
@@ -372,13 +400,27 @@ export function PurchaseList({ purchases, items }: PurchaseListProps) {
                     <div>
                       <dt className="text-[var(--muted)]">Cost</dt>
                       <dd className="font-medium text-[var(--foreground)]">
-                        {formatPrice(purchase.cost_price)}
+                        {purchase.items
+                          ? formatBuyingPrice(
+                              purchase.cost_price,
+                              purchase.items.measurement_type,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
+                            )
+                          : formatPrice(purchase.cost_price)}
                       </dd>
                     </div>
                     <div>
                       <dt className="text-[var(--muted)]">Retail</dt>
                       <dd className="font-medium text-[var(--foreground)]">
-                        {formatPrice(purchase.retail_price)}
+                        {purchase.items
+                          ? formatBuyingPrice(
+                              purchase.retail_price,
+                              purchase.items.measurement_type,
+                              purchase.items.pieces_per_carton,
+                              purchase.items.kg_per_unit
+                            )
+                          : formatPrice(purchase.retail_price)}
                       </dd>
                     </div>
                   </dl>
