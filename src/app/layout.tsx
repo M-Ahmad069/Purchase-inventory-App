@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { BRAND } from "@/lib/brand";
+import { createClient } from "@/lib/supabase/server";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -17,10 +18,24 @@ const geistMono = localFont({
   weight: "100 900",
 });
 
-export const metadata: Metadata = {
-  title: BRAND.name,
-  description: `${BRAND.name} — ${BRAND.tagline}`,
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("app_settings")
+    .select("icon_url")
+    .eq("id", 1)
+    .maybeSingle();
+
+  const iconUrl = data?.icon_url ?? null;
+
+  return {
+    title: BRAND.name,
+    description: `${BRAND.name} — ${BRAND.tagline}`,
+    ...(iconUrl
+      ? { icons: { icon: iconUrl, shortcut: iconUrl, apple: iconUrl } }
+      : {}),
+  };
+}
 
 export const viewport: Viewport = {
   width: "device-width",

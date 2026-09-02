@@ -135,16 +135,19 @@ export interface Database {
         Row: {
           id: number;
           owner_user_id: string;
+          icon_url: string | null;
           updated_at: string;
         };
         Insert: {
           id?: number;
           owner_user_id: string;
+          icon_url?: string | null;
           updated_at?: string;
         };
         Update: {
           id?: number;
           owner_user_id?: string;
+          icon_url?: string | null;
           updated_at?: string;
         };
         Relationships: [];
