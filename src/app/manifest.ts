@@ -12,13 +12,9 @@ function iconMimeType(url: string) {
 
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const supabase = createClient();
-  const { data } = await supabase
-    .from("app_settings")
-    .select("icon_url")
-    .eq("id", 1)
-    .maybeSingle();
+  const { data } = await supabase.rpc("get_app_icon_url");
 
-  const iconUrl = data?.icon_url ?? null;
+  const iconUrl = data ?? null;
   const type = iconUrl ? iconMimeType(iconUrl) : undefined;
 
   return {

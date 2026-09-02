@@ -159,6 +159,10 @@ export interface Database {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      get_app_icon_url: {
+        Args: Record<string, never>;
+        Returns: string | null;
+      };
     };
     Enums: {
       measurement_type: MeasurementType;

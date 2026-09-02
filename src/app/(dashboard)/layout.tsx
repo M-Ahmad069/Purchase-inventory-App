@@ -38,7 +38,7 @@ export default async function DashboardLayout({
               {BRAND.name}
             </span>
           </Link>
-          <DashboardHeaderActions />
+          <DashboardHeaderActions iconUrl={iconUrl} />
         </div>
       </header>
 

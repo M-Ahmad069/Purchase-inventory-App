@@ -26,7 +26,11 @@ function getDisplayLabel(email: string, displayName: string) {
   return displayName.trim() || email;
 }
 
-export function ProfileMenu() {
+type ProfileMenuProps = {
+  iconUrl?: string | null;
+};
+
+export function ProfileMenu({ iconUrl = null }: ProfileMenuProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
@@ -140,8 +144,13 @@ export function ProfileMenu() {
         aria-label="Open profile menu"
         className={`${buttonSecondaryClassName} flex !min-h-10 items-center gap-2 !px-2 !py-2 sm:!px-3`}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-500">
-          {initials}
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-emerald-600 text-xs font-bold text-white dark:bg-emerald-500">
+          {iconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={iconUrl} alt="" className="h-full w-full object-cover" />
+          ) : (
+            initials
+          )}
         </span>
         <span className="hidden max-w-[8rem] truncate text-sm font-semibold sm:inline">
           {label}
