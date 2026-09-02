@@ -15,15 +15,13 @@ import { NumberInput } from "@/components/ui/number-input";
 import { SuccessBanner } from "@/components/ui/success-banner";
 import { createClient } from "@/lib/supabase/client";
 import { formatAppError } from "@/lib/errors";
-import { getMeasurementShortLabel, isMaanWeight } from "@/lib/format";
+import { getMeasurementShortLabel } from "@/lib/format";
 import type { Item, MeasurementType } from "@/types/database";
 import { MAAN_KG } from "@/types/database";
 
 type ItemFormProps = {
   items: Item[];
 };
-
-type WeightUnit = "kg" | "maan";
 
 const MEASUREMENT_OPTIONS: {
   value: MeasurementType;
@@ -34,13 +32,21 @@ const MEASUREMENT_OPTIONS: {
   { value: "carton", label: "Carton" },
 ];
 
+/** Bulk weight-unit presets: null = plain per-kg pricing. */
+export const WEIGHT_UNIT_PRESETS: { value: number | null; label: string }[] = [
+  { value: null, label: "Per kg" },
+  { value: MAAN_KG, label: `Per maan (${MAAN_KG} kg)` },
+  { value: 25, label: "Per 25 kg" },
+];
+
 export function ItemForm({ items }: ItemFormProps) {
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
   const [name, setName] = useState("");
   const [measurementType, setMeasurementType] =
     useState<MeasurementType>("weight");
-  const [weightUnit, setWeightUnit] = useState<WeightUnit>("kg");
+  /** Bulk weight unit for this item: null = per kg. */
+  const [weightUnit, setWeightUnit] = useState<number | null>(null);
   const [piecesPerCarton, setPiecesPerCarton] = useState("");
   const [notes, setNotes] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -88,7 +94,7 @@ export function ItemForm({ items }: ItemFormProps) {
   function handleSelectSuggestion(item: Item) {
     setName(item.name);
     setMeasurementType(item.measurement_type);
-    setWeightUnit(isMaanWeight(item.kg_per_unit) ? "maan" : "kg");
+    setWeightUnit(item.kg_per_unit ?? null);
     setPiecesPerCarton(
       item.pieces_per_carton != null ? String(item.pieces_per_carton) : ""
     );
@@ -99,7 +105,7 @@ export function ItemForm({ items }: ItemFormProps) {
   function handleMeasurementChange(next: MeasurementType) {
     setMeasurementType(next);
     if (next !== "carton") setPiecesPerCarton("");
-    if (next !== "weight") setWeightUnit("kg");
+    if (next !== "weight") setWeightUnit(null);
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -123,8 +129,7 @@ export function ItemForm({ items }: ItemFormProps) {
       }
     }
 
-    const kgPerUnit =
-      measurementType === "weight" && weightUnit === "maan" ? MAAN_KG : null;
+    const kgPerUnit = measurementType === "weight" ? weightUnit : null;
 
     setLoading(true);
 
@@ -145,7 +150,7 @@ export function ItemForm({ items }: ItemFormProps) {
 
     setName("");
     setMeasurementType("weight");
-    setWeightUnit("kg");
+    setWeightUnit(null);
     setPiecesPerCarton("");
     setNotes("");
     setShowSuggestions(false);
@@ -243,18 +248,13 @@ export function ItemForm({ items }: ItemFormProps) {
           {measurementType === "weight" && (
             <div>
               <span className={labelClassName}>Weight unit</span>
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {(
-                  [
-                    { value: "kg" as const, label: "Per kg" },
-                    { value: "maan" as const, label: `Per maan (${MAAN_KG} kg)` },
-                  ] as const
-                ).map((option) => (
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {WEIGHT_UNIT_PRESETS.map((option) => (
                   <button
-                    key={option.value}
+                    key={option.label}
                     type="button"
                     onClick={() => setWeightUnit(option.value)}
-                    className={`min-h-11 rounded-xl border px-3 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                    className={`min-h-11 rounded-xl border px-2 py-2 text-sm font-semibold transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
                       weightUnit === option.value
                         ? "border-emerald-500 bg-emerald-50 text-emerald-800 shadow-sm dark:border-emerald-500 dark:bg-emerald-950/50 dark:text-emerald-300"
                         : "border-[var(--input-border)] bg-[var(--card)] text-[var(--muted)] hover:border-gray-300 dark:hover:border-gray-600"

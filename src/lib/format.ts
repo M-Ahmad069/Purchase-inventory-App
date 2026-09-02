@@ -23,12 +23,17 @@ export function isMaanWeight(kgPerUnit: number | null | undefined) {
   return kgPerUnit != null && kgPerUnit > 1;
 }
 
+/** Short name for a bulk weight unit: "maan" for the 40kg maan, otherwise "Nkg". */
+export function getBulkUnitName(kgPerUnit: number | null | undefined) {
+  return kgPerUnit === MAAN_KG ? "maan" : `${kgPerUnit}kg`;
+}
+
 export function getMeasurementShortLabel(
   measurementType: MeasurementType,
   kgPerUnit?: number | null
 ) {
   if (measurementType === "weight") {
-    return isMaanWeight(kgPerUnit) ? "maan" : "kg";
+    return isMaanWeight(kgPerUnit) ? getBulkUnitName(kgPerUnit) : "kg";
   }
   switch (measurementType) {
     case "piece":
@@ -43,9 +48,8 @@ export function getMeasurementLabel(
   kgPerUnit?: number | null
 ) {
   if (measurementType === "weight") {
-    return isMaanWeight(kgPerUnit)
-      ? `maan (${kgPerUnit ?? MAAN_KG} kg)`
-      : "kg";
+    if (kgPerUnit === MAAN_KG) return `maan (${MAAN_KG} kg)`;
+    return isMaanWeight(kgPerUnit) ? `${kgPerUnit} kg unit` : "kg";
   }
   switch (measurementType) {
     case "piece":
@@ -60,7 +64,7 @@ export function getPriceUnitLabel(
   kgPerUnit?: number | null
 ) {
   if (measurementType === "weight") {
-    return isMaanWeight(kgPerUnit) ? "per maan" : "per kg";
+    return isMaanWeight(kgPerUnit) ? `per ${getBulkUnitName(kgPerUnit)}` : "per kg";
   }
   switch (measurementType) {
     case "piece":
@@ -96,8 +100,8 @@ export function formatBuyingPrice(
   }
 
   if (measurementType === "weight" && isMaanWeight(kgPerUnit)) {
-    const perMaan = value * (kgPerUnit as number);
-    return `${formatPrice(perMaan)} /maan · ${formatPrice(value)} /kg`;
+    const perUnit = value * (kgPerUnit as number);
+    return `${formatPrice(perUnit)} /${getBulkUnitName(kgPerUnit)} · ${formatPrice(value)} /kg`;
   }
 
   return formatPriceWithUnit(value, measurementType, kgPerUnit);
@@ -113,11 +117,13 @@ export function formatQuantity(
   if (measurementType === "weight" && quantityKg != null) {
     if (isMaanWeight(kgPerUnit)) {
       const unit = kgPerUnit as number;
-      const maans = quantityKg / unit;
-      const maanLabel = Number.isInteger(maans)
-        ? String(maans)
-        : maans.toLocaleString(undefined, { maximumFractionDigits: 3 });
-      return `${maanLabel} maan (${quantityKg} kg)`;
+      const count = quantityKg / unit;
+      const countLabel = Number.isInteger(count)
+        ? String(count)
+        : count.toLocaleString(undefined, { maximumFractionDigits: 3 });
+      const unitName =
+        unit === MAAN_KG ? "maan" : `${unit}kg unit${count === 1 ? "" : "s"}`;
+      return `${countLabel} ${unitName} (${quantityKg} kg)`;
     }
     return `${quantityKg} kg`;
   }

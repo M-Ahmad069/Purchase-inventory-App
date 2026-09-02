@@ -14,11 +14,11 @@ import {
   labelClassName,
 } from "@/components/ui/form";
 import { NumberInput } from "@/components/ui/number-input";
+import { WEIGHT_UNIT_PRESETS } from "@/components/items/item-form";
 import { formatAppError } from "@/lib/errors";
-import { getMeasurementLabel, isMaanWeight } from "@/lib/format";
+import { getMeasurementLabel } from "@/lib/format";
 import { createClient } from "@/lib/supabase/client";
 import type { Item } from "@/types/database";
-import { MAAN_KG } from "@/types/database";
 
 type ItemListProps = {
   items: Item[];
@@ -34,7 +34,8 @@ type EditState = {
   name: string;
   notes: string;
   piecesPerCarton: string;
-  weightUnit: "kg" | "maan";
+  /** Bulk weight unit for this item: null = per kg. */
+  weightUnit: number | null;
   measurementType: Item["measurement_type"];
 };
 
@@ -73,7 +74,7 @@ export function ItemList({ items }: ItemListProps) {
       notes: item.notes ?? "",
       piecesPerCarton:
         item.pieces_per_carton != null ? String(item.pieces_per_carton) : "",
-      weightUnit: isMaanWeight(item.kg_per_unit) ? "maan" : "kg",
+      weightUnit: item.kg_per_unit ?? null,
       measurementType: item.measurement_type,
     });
   }
@@ -103,9 +104,7 @@ export function ItemList({ items }: ItemListProps) {
     }
 
     const kgPerUnit =
-      editState.measurementType === "weight" && editState.weightUnit === "maan"
-        ? MAAN_KG
-        : null;
+      editState.measurementType === "weight" ? editState.weightUnit : null;
 
     setSavingId(editState.id);
     setError(null);
@@ -339,18 +338,10 @@ export function ItemList({ items }: ItemListProps) {
                               {item.measurement_type === "weight" && (
                                 <div>
                                   <span className={labelClassName}>Weight unit</span>
-                                  <div className="mt-2 grid grid-cols-2 gap-2">
-                                    {(
-                                      [
-                                        { value: "kg" as const, label: "Per kg" },
-                                        {
-                                          value: "maan" as const,
-                                          label: `Per maan (${MAAN_KG} kg)`,
-                                        },
-                                      ] as const
-                                    ).map((option) => (
+                                  <div className="mt-2 grid grid-cols-3 gap-2">
+                                    {WEIGHT_UNIT_PRESETS.map((option) => (
                                       <button
-                                        key={option.value}
+                                        key={option.label}
                                         type="button"
                                         disabled={savingId === item.id}
                                         onClick={() =>

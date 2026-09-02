@@ -17,6 +17,7 @@ import { SuccessBanner } from "@/components/ui/success-banner";
 import { VendorField } from "@/components/purchases/vendor-field";
 import {
   formatTotalAmount,
+  getBulkUnitName,
   getPriceUnitLabel,
   isMaanWeight,
   toDatetimeLocalValue,
@@ -80,6 +81,9 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
   const measurementType = selectedItem?.measurement_type ?? null;
   const maanItem = measurementType === "weight" && isMaanWeight(selectedItem?.kg_per_unit);
   const kgPerUnit = selectedItem?.kg_per_unit ?? MAAN_KG;
+  /** Display name for the bulk weight unit, e.g. "maan" or "25kg". */
+  const bulkUnitName = getBulkUnitName(kgPerUnit);
+  const bulkUnitPlural = kgPerUnit === MAAN_KG ? "maans" : `${bulkUnitName} units`;
   const unitLabel = measurementType
     ? getPriceUnitLabel(measurementType, selectedItem?.kg_per_unit)
     : "";
@@ -144,7 +148,9 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       items.map((item) => {
         let unit = "pcs";
         if (item.measurement_type === "weight") {
-          unit = isMaanWeight(item.kg_per_unit) ? "maan" : "kg";
+          unit = isMaanWeight(item.kg_per_unit)
+            ? getBulkUnitName(item.kg_per_unit)
+            : "kg";
         }
         if (item.measurement_type === "carton") {
           unit = item.pieces_per_carton
@@ -247,7 +253,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
       if (resolvedWeightKg == null || resolvedWeightKg <= 0) {
         setError(
           maanItem && weightInputMode === "maan"
-            ? "Enter a valid maan count."
+            ? `Enter a valid ${bulkUnitName} count.`
             : "Enter a valid total weight in kg."
         );
         return;
@@ -376,7 +382,7 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
                         : "border-[var(--input-border)] text-[var(--muted)]"
                     }`}
                   >
-                    Enter maans
+                    Enter {bulkUnitPlural}
                   </button>
                   <button
                     type="button"
@@ -398,9 +404,9 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
               {maanItem && weightInputMode === "maan" ? (
                 <NumberInput
                   id="purchase-maans"
-                  label="Total Maans"
+                  label={kgPerUnit === MAAN_KG ? "Total Maans" : `Total ${bulkUnitName} Units`}
                   mode="decimal"
-                  suffix="maan"
+                  suffix={bulkUnitName}
                   required
                   value={quantityKg}
                   onChange={(value) =>
@@ -427,10 +433,10 @@ export function PurchaseForm({ vendors, items }: PurchaseFormProps) {
 
               {maanItem && resolvedWeightKg != null && (
                 <p className="text-xs text-[var(--muted)]">
-                  1 maan = {kgPerUnit} kg
+                  1 {bulkUnitName} = {kgPerUnit} kg
                   {weightInputMode === "maan"
                     ? ` · = ${resolvedWeightKg} kg`
-                    : ` · = ${(resolvedWeightKg / kgPerUnit).toLocaleString(undefined, { maximumFractionDigits: 3 })} maan`}
+                    : ` · = ${(resolvedWeightKg / kgPerUnit).toLocaleString(undefined, { maximumFractionDigits: 3 })} ${bulkUnitName}`}
                 </p>
               )}
             </div>
